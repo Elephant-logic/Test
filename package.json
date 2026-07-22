@@ -1,0 +1,8 @@
+{
+  "name": "wavetable-dual-synth-web",
+  "version": "0.1.0",
+  "description": "Web Audio prototype of a multiband wavetable synth",
+  "scripts": {
+    "start": "echo 'Open web/index.html in a browser'"
+  }
+}

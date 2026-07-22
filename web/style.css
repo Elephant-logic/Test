@@ -1,0 +1,33 @@
+:root{
+  --bg:#0b0f14;
+  --panel:#0f1418;
+  --muted:#9aa6b2;
+  --accent:#6ee7b7;
+  --accent-2:#8ab4ff;
+}
+*{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+body{margin:0;background:linear-gradient(180deg,var(--bg),#071017);color:#e6eef3}
+.app{max-width:1200px;margin:8px auto;padding:12px}
+.topbar{display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-size:1.1rem;margin:0}
+.card{background:linear-gradient(180deg,var(--panel),#0c1115);border-radius:10px;padding:10px;margin:10px 0;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+.main{display:flex;gap:12px}
+.left{flex:2}
+.right{flex:1}
+.osc-row{display:flex;gap:10px}
+.osc{flex:1}
+.osc h3{margin:0 0 6px}
+label{display:block;margin:6px 0;font-size:0.9rem}
+input[type=range]{width:100%}
+select{width:100%}
+.keyboard-keys{display:flex;flex-wrap:wrap;padding:6px;user-select:none}
+.key{width:36px;height:120px;margin:1px;border-radius:4px;background:#fff;color:#000;display:flex;align-items:flex-end;justify-content:center;font-size:12px;position:relative}
+.key.black{width:24px;height:80px;background:#111;color:#fff;margin-left:-12px;margin-right:-12px;z-index:2}
+.key.pressed{box-shadow:inset 0 0 8px rgba(0,0,0,0.6);transform:translateY(2px)}
+.footer{text-align:center;margin-top:12px;color:var(--muted)}
+.visuals canvas{width:100%;height:120px}
+@media (max-width:900px){
+  .main{flex-direction:column}
+  .right{order:-1}
+  .key{width:28px;height:96px}
+}

@@ -1,0 +1,6 @@
+native/build/
+*.user
+*.sublime-workspace
+/.vscode/
+.DS_Store
+node_modules/
