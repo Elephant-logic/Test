@@ -92,13 +92,22 @@ add_executable(dsp_tests
   dsp/ModMatrix.cpp
 )
 
-target_include_directories(dsp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dsp)
+# Ensure test target can locate project sources and the generated JUCE header from the plugin target
+# so headers that expect JUCE module includes compile in the test target.
+target_include_directories(dsp_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/dsp
+        ${CMAKE_CURRENT_BINARY_DIR}/WavetableDualSynth_artefacts/JuceLibraryCode
+)
 
+# Link DSP tests against Catch2 and the JUCE modules required by DSP headers
 target_link_libraries(dsp_tests
     PRIVATE
         Catch2::Catch2WithMain
-        juce::juce_dsp
         juce::juce_audio_basics
+        juce::juce_dsp
+        juce::juce_core
 )
 
 add_test(NAME dsp_tests COMMAND dsp_tests)

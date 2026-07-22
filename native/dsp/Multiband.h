@@ -1,5 +1,9 @@
 #pragma once
-#include <JuceHeader.h>
+
+// Only include JUCE modules required by this header
+#include <juce_core/juce_core.h>
+#include <juce_dsp/juce_dsp.h>
+#include <juce_audio_basics/juce_audio_basics.h>
 
 class MultibandProcessor
 {
