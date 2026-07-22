@@ -34,6 +34,11 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // AudioProcessor MIDI capability overrides
+    bool acceptsMidi() const override;
+    bool producesMidi() const override;
+    bool isMidiEffect() const override;
+
 private:
     // DSP units
     WavetableOscillator oscA, oscB;

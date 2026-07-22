@@ -45,5 +45,21 @@ void WavetableDualSynthAudioProcessor::getStateInformation (juce::MemoryBlock& d
 void WavetableDualSynthAudioProcessor::setStateInformation (const void* data, int sizeInBytes){
 }
 
+// MIDI capability overrides
+bool WavetableDualSynthAudioProcessor::acceptsMidi() const
+{
+    return true;
+}
+
+bool WavetableDualSynthAudioProcessor::producesMidi() const
+{
+    return false;
+}
+
+bool WavetableDualSynthAudioProcessor::isMidiEffect() const
+{
+    return false;
+}
+
 // This creates new instances of the plugin
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new WavetableDualSynthAudioProcessor(); }

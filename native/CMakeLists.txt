@@ -73,13 +73,13 @@ target_link_libraries(WavetableDualSynth
 # Tests
 enable_testing()
 
-# Fetch Catch2 for tests
+# Fetch Catch2 (v3) for tests
 FetchContent_Declare(
-  catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v2.13.10
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.7.1
 )
-FetchContent_MakeAvailable(catch2)
+FetchContent_MakeAvailable(Catch2)
 
 add_executable(dsp_tests
   tests/test_dsp.cpp
@@ -93,5 +93,12 @@ add_executable(dsp_tests
 )
 
 target_include_directories(dsp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dsp)
-target_link_libraries(dsp_tests PRIVATE Catch2::Catch2)
+
+target_link_libraries(dsp_tests
+    PRIVATE
+        Catch2::Catch2WithMain
+        juce::juce_dsp
+        juce::juce_audio_basics
+)
+
 add_test(NAME dsp_tests COMMAND dsp_tests)
