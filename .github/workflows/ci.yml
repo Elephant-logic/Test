@@ -41,7 +41,7 @@ jobs:
 
       - name: Run DSP tests
         run: |
-          ctest --test-dir native/build --output-on-failure || true
+          ctest --test-dir native/build --output-on-failure
 
       - name: Upload build artifacts
         if: success() || failure()

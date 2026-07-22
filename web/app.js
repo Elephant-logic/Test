@@ -4,6 +4,10 @@
 (async function(){
   try{
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx){
+      console.error('Web Audio API not supported in this environment');
+      return;
+    }
     const ctx = new AudioCtx();
 
     // state
@@ -178,6 +182,7 @@
         const layers = [0,1];
         layers.forEach(layerIdx => {
           const layer = this.params.layers[layerIdx];
+          if(!layer) return;
           const unison = Math.max(1, Math.round(layer.unison));
           // create multiple detuned oscillators
           for(let u=0;u<unison;u++){
@@ -302,15 +307,15 @@
     // create morph waves for both oscillators
     function updateLayer(idx){
       const type = params[idx===0? 'oscA' : 'oscB'].wavetype;
-      const morphEl = document.querySelector(`.morph[data-osc=\"${idx}\"]`);
+      const morphEl = document.querySelector(`.morph[data-osc="${idx}"]`);
       const morph = morphEl ? morphEl.value * 1 : 0;
-      const detuneEl = document.querySelector(`.detune[data-osc=\"${idx}\"]`);
+      const detuneEl = document.querySelector(`.detune[data-osc="${idx}"]`);
       const detune = detuneEl ? detuneEl.value * 1 : 0;
-      const unisonEl = document.querySelector(`.unison[data-osc=\"${idx}\"]`);
+      const unisonEl = document.querySelector(`.unison[data-osc="${idx}"]`);
       const unison = unisonEl ? unisonEl.value * 1 : 1;
-      const phaseEl = document.querySelector(`.phase[data-osc=\"${idx}\"]`);
+      const phaseEl = document.querySelector(`.phase[data-osc="${idx}"]`);
       const phase = phaseEl ? phaseEl.value * 1 : 0;
-      const levelEl = document.querySelector(`.level[data-osc=\"${idx}\"]`);
+      const levelEl = document.querySelector(`.level[data-osc="${idx}"]`);
       const level = levelEl ? levelEl.value * 1 : 0.8;
       const layer = makeMorphWaves(type, 2048, morph);
       layer.morph = morph; layer.detune = detune; layer.unison = unison; layer.phase = phase; layer.level = level; layer.unisonSpread = document.getElementById('stereoWidth') ? document.getElementById('stereoWidth').value*0.5 : 0.25;
@@ -471,14 +476,17 @@
 
     // Visualization (oscilloscope basic)
     const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; mixBus.connect(analyser);
-    const canvas = document.getElementById('viz'); const cctx = canvas.getContext('2d');
-    function draw(){ requestAnimationFrame(draw); const data = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(data); cctx.fillStyle = '#071017'; cctx.fillRect(0,0,canvas.width,canvas.height); cctx.lineWidth=2; cctx.strokeStyle='#6ee7b7'; cctx.beginPath(); const slice = canvas.width / data.length; let x=0; for(let i=0;i<data.length;i++){ const v = data[i]/128.0; const y = (v*canvas.height)/2; if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y); x+=slice; } cctx.stroke(); }
+    const canvas = document.getElementById('viz'); const cctx = canvas ? canvas.getContext('2d') : null;
+    function draw(){ requestAnimationFrame(draw); if(!cctx) return; const data = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(data); cctx.fillStyle = '#071017'; cctx.fillRect(0,0,canvas.width,canvas.height); cctx.lineWidth=2; cctx.strokeStyle='#6ee7b7'; cctx.beginPath(); const slice = canvas.width / data.length; let x=0; for(let i=0;i<data.length;i++){ const v = data[i]/128.0; const y = (v*canvas.height)/2; if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y); x+=slice; } cctx.stroke(); }
     draw();
 
     // misc helpers
     function midiToFreq(m){ return 440 * Math.pow(2,(m-69)/12); }
     function noteToMidi(name){ // supports C4 etc
-      const match = name.match(/^([A-G]#?)(-?\d)$/); if(!match) return 60; const pitch=match[1]; const octave=+match[2]; const order = {'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11}; return 12*(octave+1) + order[pitch]; }
+      const match = name.match(/^([A-G]#?)(-?\d)$/);
+      if(!match) return 60;
+      const pitch=match[1]; const octave=+match[2]; const order = {'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11};
+      return 12*(octave+1) + order[pitch]; }
 
     // basic unit test generator for demo tones (procedural test tones)
     window.generateTestTone = function(freq=440,dur=1){ const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = freq; g.gain.value = 0.5; o.connect(g); g.connect(mixBus); o.start(); g.gain.setValueAtTime(0.5, ctx.currentTime); g.gain.linearRampToValueAtTime(0.0, ctx.currentTime+dur); setTimeout(()=>{try{o.stop();}catch(e){}}, dur*1000+200); };
