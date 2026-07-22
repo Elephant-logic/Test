@@ -21,6 +21,18 @@ public:
     bool isMidiEffect() const override;
     bool hasEditor() const override;
 
+    // Program management
+    double getTailLengthSeconds() const override;
+    int getNumPrograms() override;
+    int getCurrentProgram() override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
+
+    // State handling
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
+
     // state
     using APVTS = juce::AudioProcessorValueTreeState;
     APVTS& getValueTreeState() { return parameters; }

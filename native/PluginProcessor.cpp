@@ -63,6 +63,48 @@ juce::AudioProcessorEditor* BEEFAudioProcessor::createEditor()
     return new BEEFPluginEditor (*this);
 }
 
+// Program and state implementations as requested
+
+double BEEFAudioProcessor::getTailLengthSeconds() const
+{
+    return 0.0;
+}
+
+int BEEFAudioProcessor::getNumPrograms()
+{
+    return 1;
+}
+
+int BEEFAudioProcessor::getCurrentProgram()
+{
+    return 0;
+}
+
+void BEEFAudioProcessor::setCurrentProgram(int)
+{
+}
+
+const juce::String BEEFAudioProcessor::getProgramName(int)
+{
+    return {};
+}
+
+void BEEFAudioProcessor::changeProgramName(int, const juce::String&)
+{
+}
+
+void BEEFAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+{
+    if (auto xml = parameters.copyState().createXml())
+        copyXmlToBinary(*xml, destData);
+}
+
+void BEEFAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+{
+    if (auto xml = getXmlFromBinary(data, sizeInBytes))
+        parameters.replaceState(juce::ValueTree::fromXml(*xml));
+}
+
 // createPluginFilter as requested
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
