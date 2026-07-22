@@ -5,7 +5,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-# Fetch JUCE
+# On macOS some Objective-C/Objective-C++ sources or system frameworks may be required by JUCE
+if(APPLE)
+    enable_language(OBJC)
+    enable_language(OBJCXX)
+endif()
+
+# Fetch JUCE only. Use JUCE's CMake helpers to create the plugin target and build formats.
 FetchContent_Declare(
   juce
   GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
@@ -13,23 +19,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(juce)
 
-# Fetch VST3 SDK
-FetchContent_Declare(
-  vst3sdk
-  GIT_REPOSITORY https://github.com/steinbergmedia/vst3sdk.git
-  GIT_TAG        master
-)
-FetchContent_MakeAvailable(vst3sdk)
-
-# Add plugin target using JUCE CMake helper
+# Add plugin target using JUCE CMake helper. Use JUCE's VST3 support (no external Steinberg VST3 SDK fetch).
 juce_add_plugin(WavetableDualSynth
-  VERSION 1.0.0
-  PLUGIN_MANUFACTURER_CODE Wavt
-  PLUGIN_CODE        WDS1
-  FORMATS VST3
-  PRODUCT_NAME "Wavetable Dual Synth"
+    COMPANY_NAME "Elephant Logic"
+    BUNDLE_ID "com.elephantlogic.wavetabledualsynth"
+    PLUGIN_MANUFACTURER_CODE Elph
+    PLUGIN_CODE WvDS
+    FORMATS VST3 Standalone
+    PRODUCT_NAME "Wavetable Dual Synth"
 )
 
+# Plugin sources - preserve existing plugin and DSP sources
 target_sources(WavetableDualSynth PRIVATE
   PluginProcessor.cpp
   PluginProcessor.h
@@ -51,16 +51,34 @@ target_sources(WavetableDualSynth PRIVATE
   dsp/ModMatrix.h
 )
 
+# Compile flags / defines
 target_compile_definitions(WavetableDualSynth PRIVATE JUCE_WEB_BROWSER=0)
 
+# Link to JUCE modules as needed
 target_link_libraries(WavetableDualSynth PRIVATE juce::juce_audio_utils)
 
 # Tests
 enable_testing()
-add_executable(dsp_tests tests/test_dsp.cpp dsp/Oscillator.cpp dsp/Wavetable.cpp dsp/Filter.cpp dsp/Envelope.cpp dsp/LFO.cpp dsp/Multiband.cpp dsp/ModMatrix.cpp)
-target_include_directories(dsp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dsp)
+
 # Fetch Catch2 for tests
-FetchContent_Declare(catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v2.13.10)
+FetchContent_Declare(
+  catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG v2.13.10
+)
 FetchContent_MakeAvailable(catch2)
+
+add_executable(dsp_tests
+  tests/test_dsp.cpp
+  dsp/Oscillator.cpp
+  dsp/Wavetable.cpp
+  dsp/Filter.cpp
+  dsp/Envelope.cpp
+  dsp/LFO.cpp
+  dsp/Multiband.cpp
+  dsp/ModMatrix.cpp
+)
+
+target_include_directories(dsp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/dsp)
 target_link_libraries(dsp_tests PRIVATE Catch2::Catch2)
 add_test(NAME dsp_tests COMMAND dsp_tests)

@@ -34,7 +34,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -S native -B native/build -DJUCE_USE_CMAKE=ON
+          cmake -S native -B native/build
 
       - name: Build (CMake)
         run: |
@@ -44,9 +44,13 @@ jobs:
         run: |
           ctest --test-dir native/build --output-on-failure
 
-      - name: Upload build artifacts
+      - name: Upload compiled plugin artefacts and test results
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: native-build-${{ matrix.os }}
-          path: native/build
+          path: |
+            native/build/**/*_artefacts/**
+            native/build/**/*.vst3
+            native/build/**/Standalone/**
+            native/build/**/Testing/**
