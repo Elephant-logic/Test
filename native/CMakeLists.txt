@@ -29,6 +29,9 @@ juce_add_plugin(WavetableDualSynth
     PRODUCT_NAME "Wavetable Dual Synth"
 )
 
+# Generate the consolidated JuceHeader for the plugin target so includes like <JuceHeader.h> are available
+juce_generate_juce_header(WavetableDualSynth)
+
 # Plugin sources - preserve existing plugin and DSP sources
 target_sources(WavetableDualSynth PRIVATE
   PluginProcessor.cpp
@@ -55,7 +58,17 @@ target_sources(WavetableDualSynth PRIVATE
 target_compile_definitions(WavetableDualSynth PRIVATE JUCE_WEB_BROWSER=0)
 
 # Link to JUCE modules as needed
-target_link_libraries(WavetableDualSynth PRIVATE juce::juce_audio_utils)
+target_link_libraries(WavetableDualSynth
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_dsp
+        juce::juce_gui_extra
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags
+)
 
 # Tests
 enable_testing()
