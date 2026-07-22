@@ -15,14 +15,12 @@ struct BEEFAudioProcessor::Impl
     juce::dsp::Gain<float> masterGain;
 
     Impl()
-        : filter(
-            juce::dsp::IIR::Filter<float>(),
-            juce::dsp::IIR::Coefficients<float>::makeLowPass(
-                44100.0,
-                15000.0f
-            )
-        )
     {
+        // Initialize filter coefficients/state explicitly (JUCE 7.0.12 does not provide the two-argument ProcessorDuplicator constructor)
+        filter.state = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+            44100.0,
+            15000.0f
+        );
     }
 };
 

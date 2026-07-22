@@ -51,9 +51,17 @@ void Oscillator::setWaveform(Wave w)
 
 float Oscillator::getNextSample()
 {
-    // Process a single sample with the internal oscillator
-    juce::dsp::AudioBlock<float> block(juce::HeapBlock<float>(1), 1, 1); // not used directly
-    // Use oscillator's process to fill a small buffer would be heavier; instead use its get next sample helper via processing a single-sample buffer
-    float out = osc.processSample(0.0f);
-    return out;
+    // Process a single sample with the internal oscillator using a valid temporary AudioBuffer
+    // Create a small temporary buffer matching the prepared channel count (2 channels as used in prepare)
+    juce::AudioBuffer<float> tempBuffer(2, 1);
+    tempBuffer.clear();
+
+    juce::dsp::AudioBlock<float> block(tempBuffer);
+    juce::dsp::ProcessContextReplacing<float> context(block);
+
+    // Let the oscillator fill the block (one sample)
+    osc.process(context);
+
+    // Return the left channel sample (channel 0)
+    return tempBuffer.getSample(0, 0);
 }
