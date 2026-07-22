@@ -1,65 +1,75 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "dsp/Voice.h" // use beef_core's voice
 
-WavetableDualSynthAudioProcessor::WavetableDualSynthAudioProcessor()
-: AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-  oscA(), oscB(), filter(), ampEnv(), filterEnv(), lfo1(), lfo2(), multiband(), modMatrix()
+// We keep implementation details private in the .cpp
+struct BEEFAudioProcessor::Impl
+{
+    Impl() {}
+};
+
+BEEFAudioProcessor::BEEFAudioProcessor()
+    : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+      parameters(*this, nullptr, "Parameters",
+      {
+          std::make_unique<juce::AudioParameterFloat>("masterGain", "Master Gain", juce::NormalisableRange<float>(-60.0f, 6.0f, 0.1f), -6.0f),
+          std::make_unique<juce::AudioParameterFloat>("oscDetune", "Osc Detune (cents)", -1200.0f, 1200.0f, 0.0f),
+          std::make_unique<juce::AudioParameterChoice>("waveform", "Waveform", juce::StringArray{"Sine","Saw","Square"}, 0)
+      })
 {
 }
 
-WavetableDualSynthAudioProcessor::~WavetableDualSynthAudioProcessor() {}
+BEEFAudioProcessor::~BEEFAudioProcessor() = default;
 
-void WavetableDualSynthAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+const juce::String BEEFAudioProcessor::getName() const { return "BEEF"; }
+
+void BEEFAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    oscA.prepare(sampleRate);
-    oscB.prepare(sampleRate);
-    filter.prepare(sampleRate);
-    ampEnv.prepare(sampleRate);
-    filterEnv.prepare(sampleRate);
-    lfo1.prepare(sampleRate);
-    lfo2.prepare(sampleRate);
-    multiband.prepare(sampleRate);
-    modMatrix.prepare(sampleRate);
+    // Prepare the synth (if present) or other processor resources
 }
 
-void WavetableDualSynthAudioProcessor::releaseResources(){}
+void BEEFAudioProcessor::releaseResources() {}
 
-bool WavetableDualSynthAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const { return true; }
-
-void WavetableDualSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+bool BEEFAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    juce::ScopedNoDenormals noDenormals;
-    auto numSamples = buffer.getNumSamples();
-
-    // Simple: just clear and produce silence until full implementation
-    buffer.clear();
-
-    // Here you would process MIDI, voice allocation, run oscillator rendering, apply filters, envelopes, LFOs, multiband, limiter, etc.
-}
-
-juce::AudioProcessorEditor* WavetableDualSynthAudioProcessor::createEditor(){ return new WavetableDualSynthAudioProcessorEditor(*this); }
-
-void WavetableDualSynthAudioProcessor::getStateInformation (juce::MemoryBlock& destData){
-    // store parameter tree or JSON
-}
-void WavetableDualSynthAudioProcessor::setStateInformation (const void* data, int sizeInBytes){
-}
-
-// MIDI capability overrides
-bool WavetableDualSynthAudioProcessor::acceptsMidi() const
-{
+    // Mono/stereo supported only
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono() &&
+        layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        return false;
     return true;
 }
 
-bool WavetableDualSynthAudioProcessor::producesMidi() const
+void BEEFAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    return false;
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear (i, 0, buffer.getNumSamples());
+
+    float gainDb = *parameters.getRawParameterValue("masterGain");
+    float gainLinear = juce::Decibels::decibelsToGain(gainDb);
+    buffer.applyGain(gainLinear);
+
+    // This minimal processor currently does not implement a full synth render here.
+    // The DSP classes are available through beef_core for tests and for a more complete synth implementation.
 }
 
-bool WavetableDualSynthAudioProcessor::isMidiEffect() const
+bool BEEFAudioProcessor::hasEditor() const { return true; }
+
+juce::AudioProcessorEditor* BEEFAudioProcessor::createEditor()
 {
-    return false;
+    return new BEEFPluginEditor (*this);
 }
 
-// This creates new instances of the plugin
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new WavetableDualSynthAudioProcessor(); }
+// createPluginFilter as requested
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new BEEFAudioProcessor();
+}
+
+
+bool BEEFAudioProcessor::acceptsMidi() const { return true; }
+bool BEEFAudioProcessor::producesMidi() const { return false; }
+bool BEEFAudioProcessor::isMidiEffect() const { return false; }

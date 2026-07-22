@@ -1,6 +1,59 @@
 #include "Oscillator.h"
-WavetableOscillator::WavetableOscillator(){ }
-void WavetableOscillator::prepare(double sr){ sampleRate = sr; }
-void WavetableOscillator::setFrequency(float f){ phaseIncrement = f / sampleRate; }
-void WavetableOscillator::setWavetable(const std::vector<float>& table){ wavetable = table; }
-void WavetableOscillator::render(float* output, int numSamples){ if(wavetable.empty()) return; const int N = (int)wavetable.size(); for(int s=0;s<numSamples;s++){ double idx = phase * N; int i0 = (int)idx % N; int i1 = (i0+1)%N; double frac = idx - floor(idx); output[s] = (float)(wavetable[i0]*(1-frac) + wavetable[i1]*frac); phase += phaseIncrement; if(phase>=1.0) phase -= 1.0; } }
+#include <cmath>
+
+Oscillator::Oscillator()
+{
+    // default to sine
+    osc.initialise([](float x) { return std::sin(x); });
+}
+
+void Oscillator::prepare(double sr)
+{
+    sampleRate = sr;
+    juce::dsp::ProcessSpec spec{ sr, (juce::uint32)512, 2 };
+    osc.prepare(spec);
+    osc.setFrequency((float)baseFrequency);
+}
+
+void Oscillator::setFrequency(float frequency)
+{
+    baseFrequency = frequency;
+    // apply detune
+    float ratio = std::pow(2.0f, detuneCents / 1200.0f);
+    osc.setFrequency(baseFrequency * ratio);
+}
+
+void Oscillator::setDetuneCents(float cents)
+{
+    detuneCents = cents;
+    float ratio = std::pow(2.0f, detuneCents / 1200.0f);
+    osc.setFrequency(baseFrequency * ratio);
+}
+
+void Oscillator::setWaveform(Wave w)
+{
+    waveform = w;
+    switch (waveform)
+    {
+        case Sine:
+            osc.initialise([](float x) { return std::sin(x); });
+            break;
+        case Saw:
+            osc.initialise([](float x) { return x / juce::MathConstants<float>::pi; }); // crude saw via phase
+            break;
+        case Square:
+            osc.initialise([](float x) { return x < 0.0f ? -1.0f : 1.0f; });
+            break;
+    }
+    // reapply frequency after changing waveform
+    setFrequency(baseFrequency);
+}
+
+float Oscillator::getNextSample()
+{
+    // Process a single sample with the internal oscillator
+    juce::dsp::AudioBlock<float> block(juce::HeapBlock<float>(1), 1, 1); // not used directly
+    // Use oscillator's process to fill a small buffer would be heavier; instead use its get next sample helper via processing a single-sample buffer
+    float out = osc.processSample(0.0f);
+    return out;
+}

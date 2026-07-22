@@ -1,18 +1,27 @@
 #pragma once
 
-#include <vector>
+// Explicit JUCE module headers used by the DSP code
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_dsp/juce_dsp.h>
 
-class WavetableOscillator
+class Oscillator
 {
 public:
-    WavetableOscillator();
+    enum Wave { Sine = 0, Saw, Square };
+
+    Oscillator();
     void prepare(double sampleRate);
-    void setFrequency(float f);
-    void setWavetable(const std::vector<float>& table);
-    void render(float* output, int numSamples);
+    void setFrequency(float frequency);
+    void setDetuneCents(float detuneCents);
+    void setWaveform(Wave w);
+    float getNextSample();
+
 private:
+    juce::dsp::Oscillator<float> osc;
     double sampleRate = 44100.0;
-    double phase = 0.0;
-    double phaseIncrement = 0.0;
-    std::vector<float> wavetable;
+    float baseFrequency = 440.0f;
+    float detuneCents = 0.0f;
+    Wave waveform = Sine;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Oscillator)
 };

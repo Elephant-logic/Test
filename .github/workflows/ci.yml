@@ -1,17 +1,24 @@
 name: CI - Build Native Plugin & Tests
 
 on:
+  workflow_dispatch:
   push:
+    branches: [main, codem8s-test]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    name: build (${{ matrix.os }}, Release)
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        build-type: [Release]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,38 +26,35 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git clang libgtk-3-dev libx11-dev
+          sudo apt-get install -y build-essential cmake git pkg-config libasound2-dev libjack-jackd2-dev libfreetype6-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libwebkit2gtk-4.1-dev libglu1-mesa-dev
 
       - name: Install dependencies (macOS)
         if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install cmake python3
+        run: brew install cmake || true
 
       - name: Install dependencies (Windows)
         if: matrix.os == 'windows-latest'
-        run: |
-          choco install -y cmake
+        shell: pwsh
+        run: choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
       - name: Configure CMake
-        run: |
-          cmake -S native -B native/build
+        run: cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build (CMake)
-        run: |
-          cmake --build native/build --config ${{ matrix.build-type }} -- -j 2
+      - name: Build plugin
+        run: cmake --build native/build --config Release --parallel 2
 
       - name: Run DSP tests
-        run: |
-          ctest --test-dir native/build --output-on-failure
+        run: ctest --test-dir native/build -C Release --output-on-failure
 
-      - name: Upload compiled plugin artefacts and test results
-        if: success() || failure()
+      - name: Upload compiled plugin artifacts and test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-build-${{ matrix.os }}
+          if-no-files-found: warn
           path: |
             native/build/**/*_artefacts/**
             native/build/**/*.vst3
-            native/build/**/Standalone/**
-            native/build/**/Testing/**
+            native/build/**/*.app
+            native/build/**/*.exe
+            native/build/test-results/**

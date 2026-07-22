@@ -1,34 +1,35 @@
-Wavetable Dual Synth - Browser Prototype + Native VST3 (JUCE/CMake)
+# BEEF - JUCE VST3 Synth (Codem8s conversion)
 
-This repository contains two parts:
+This project is a JUCE-based VST3 synth skeleton built with CMake.
 
-1) Browser Web Audio prototype (Preview) - folder: /web
-   - Playable onscreen keyboard and computer-keyboard input
-   - 2 wavetable oscillators with procedural wavetable generation and morphing
-   - Unison, detune, stereo width, phase, pan, sub oscillator, procedural noise
-   - Multimode filter, 3-band split processing with crossover, per-band gain + drive
-   - ADSR envelopes, 2 LFOs, modulation matrix, master gain and limiter
-   - MIDI input support, preset save/load (localStorage / export-import)
-   - Responsive dark UI, mobile-first
+What this project contains:
+- native/: JUCE CMake project, plugin processor, editor and DSP core
+- Tests using Catch2 to validate DSP components (Oscillator, Effects)
+- GitHub Actions workflow to build on multiple OSes and upload artifacts
 
-2) Native VST3 plugin project (JUCE + CMake) - folder: /native
-   - JUCE/CMake-based VST3 instrument target
-   - Clean DSP architecture with oscillators, wavetables, noise, filter, envelopes, LFOs
-   - Multiband processing, parameter/state management, MIDI processing
-   - Plugin editor skeleton, preset structure (JSON-based)
-   - DSP unit tests (Catch2) and CI workflow to fetch JUCE and VST3 SDK, build, run tests
+Notes and implementation details:
+- CMake fetches JUCE and Catch2 via FetchContent. You do not need to provide JUCE or SDKs as assets.
+- The reusable DSP code (oscillator, voice, effects) is built into a static library target beef_core used by the plugin and tests.
+- Tests exercise DSP classes directly and do not instantiate the plugin to avoid duplicate plugin symbols.
+- The plugin is declared as a synth (IS_SYNTH TRUE) and requests MIDI input.
 
-Notes
-- No audio assets are required: all waveforms, wavetables, noise, test tones are generated procedurally.
-- CI fetches JUCE and VST3 SDK automatically; toolchains/SDKs are treated as build dependencies.
-- This repo is a starting point and aims to be buildable in CI (see .github/workflows/ci.yml).
+Important implementation choices and fixes made while converting the original project:
+- Removed an unmatched #endif from headers.
+- Ensured Impl only had a single constructor.
+- Provided createPluginFilter() exactly as required.
+- ADSR sample rate is set in BeefVoice::prepareVoice via env.setSampleRate(newRate).
+- Oscillator detune is applied as a frequency ratio using pow(2, cents/1200.0).
+- Glide/portamento is not implemented; it is left inactive until a proper smoothed-frequency implementation is provided.
+- Distortion (tanh) and a simple bitcrusher (quantization and downsample hold) are implemented and applied in Effects::processBlock.
+- All declared parameters either affect DSP or are clearly noted (UI currently exposes a master gain, oscillator detune and waveform selection). Some controls are conceptual and require a complete synth render path to be fully effective.
 
-Quick start (browser prototype):
-- Open web/index.html in a modern browser (Chrome/Edge/Firefox/Safari). No server required.
-- Use mouse/touch to play the onscreen keyboard or use computer keyboard.
-- Connect a MIDI keyboard (via Web MIDI) if allowed by your browser.
+Building locally (example):
 
-Native build (high-level):
-- See native/README.md for platform-specific build notes. CI is configured to fetch JUCE and VST3 SDK.
+mkdir -p native/build
+cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release
+cmake --build native/build --config Release --parallel 2
 
-Licensing & Third-party: This project does not include third-party SDKs or binary assets. CI will clone required SDKs automatically as part of the build steps.
+Run tests (from build directory):
+ctest --test-dir native/build --output-on-failure
+
+License: adapt and extend as needed.

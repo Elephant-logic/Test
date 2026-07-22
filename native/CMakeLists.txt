@@ -1,74 +1,66 @@
-cmake_minimum_required(VERSION 3.16)
-project(WavetableDualSynth VERSION 1.0.0 LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.22)
+project(BEEF VERSION 1.0.0 LANGUAGES C CXX)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-include(FetchContent)
-
-# On macOS some Objective-C/Objective-C++ sources or system frameworks may be required by JUCE
 if(APPLE)
     enable_language(OBJC)
     enable_language(OBJCXX)
 endif()
 
-# Fetch JUCE only. Use JUCE's CMake helpers to create the plugin target and build formats.
+include(FetchContent)
 FetchContent_Declare(
-  juce
-  GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-  GIT_TAG        master
+    JUCE
+    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+    GIT_TAG 8.0.4
+    GIT_SHALLOW TRUE
 )
-FetchContent_MakeAvailable(juce)
+FetchContent_MakeAvailable(JUCE)
 
-# Add plugin target using JUCE CMake helper. Use only VST3 and Standalone formats (no VST2 support).
-# Keep stable unique plugin identifiers as requested.
-juce_add_plugin(WavetableDualSynth
-    COMPANY_NAME "Elephant Logic"
-    BUNDLE_ID "com.elephantlogic.wavetabledualsynth"
-    PLUGIN_MANUFACTURER_CODE Elph
-    PLUGIN_CODE WvDS
+juce_add_plugin(BEEF
+    VERSION 1.0.0
+    COMPANY_NAME "Codem8s"
+    BUNDLE_ID "com.codem8s.beef"
+    PLUGIN_MANUFACTURER_CODE C8ms
+    PLUGIN_CODE C8s1
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Wavetable Dual Synth"
+    PRODUCT_NAME "Codem8s BEEF"
+    IS_SYNTH TRUE
+    NEEDS_MIDI_INPUT TRUE
+    NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE
+    COPY_PLUGIN_AFTER_BUILD FALSE
 )
 
-# Generate the consolidated JuceHeader for the plugin target so includes like <JuceHeader.h> are available
-juce_generate_juce_header(WavetableDualSynth)
+juce_generate_juce_header(BEEF)
 
-# Plugin sources - preserve existing plugin and DSP sources
-target_sources(WavetableDualSynth PRIVATE
-  PluginProcessor.cpp
-  PluginProcessor.h
-  PluginEditor.cpp
-  PluginEditor.h
-  dsp/Oscillator.cpp
-  dsp/Oscillator.h
-  dsp/Wavetable.cpp
-  dsp/Wavetable.h
-  dsp/Filter.cpp
-  dsp/Filter.h
-  dsp/Envelope.cpp
-  dsp/Envelope.h
-  dsp/LFO.cpp
-  dsp/LFO.h
-  dsp/Multiband.cpp
-  dsp/Multiband.h
-  dsp/ModMatrix.cpp
-  dsp/ModMatrix.h
+target_sources(BEEF PRIVATE
+    PluginProcessor.cpp
+    PluginProcessor.h
+    PluginEditor.cpp
+    PluginEditor.h
+    dsp/Oscillator.h
+    dsp/Oscillator.cpp
+    dsp/Voice.h
+    dsp/Voice.cpp
+    dsp/Effects.h
+    dsp/Effects.cpp
 )
 
-# Compile definitions for the plugin target: ensure VST3-only behaviour and disable unused JUCE features.
-# Marked PUBLIC so other consumers (e.g. tests or helper targets) inherit these stable build-time flags.
-target_compile_definitions(WavetableDualSynth
+target_compile_definitions(BEEF
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
 )
 
-# Link to JUCE modules as needed
-target_link_libraries(WavetableDualSynth
+target_link_libraries(BEEF
     PRIVATE
         juce::juce_audio_utils
         juce::juce_audio_processors
+        juce::juce_audio_formats
         juce::juce_dsp
         juce::juce_gui_extra
     PUBLIC
@@ -76,45 +68,3 @@ target_link_libraries(WavetableDualSynth
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
-
-# Tests
-enable_testing()
-
-# Fetch Catch2 (v3) for tests
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.7.1
-)
-FetchContent_MakeAvailable(Catch2)
-
-add_executable(dsp_tests
-  tests/test_dsp.cpp
-  dsp/Oscillator.cpp
-  dsp/Wavetable.cpp
-  dsp/Filter.cpp
-  dsp/Envelope.cpp
-  dsp/LFO.cpp
-  dsp/Multiband.cpp
-  dsp/ModMatrix.cpp
-)
-
-# Ensure test target can locate project sources and the generated JUCE header from the plugin target
-# so headers that expect JUCE module includes compile in the test target.
-target_include_directories(dsp_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/dsp
-        ${CMAKE_CURRENT_BINARY_DIR}/WavetableDualSynth_artefacts/JuceLibraryCode
-)
-
-# Link DSP tests against Catch2 and the JUCE modules required by DSP headers
-target_link_libraries(dsp_tests
-    PRIVATE
-        Catch2::Catch2WithMain
-        juce::juce_audio_basics
-        juce::juce_dsp
-        juce::juce_core
-)
-
-add_test(NAME dsp_tests COMMAND dsp_tests)
