@@ -19,7 +19,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(juce)
 
-# Add plugin target using JUCE CMake helper. Use JUCE's VST3 support (no external Steinberg VST3 SDK fetch).
+# Add plugin target using JUCE CMake helper. Use only VST3 and Standalone formats (no VST2 support).
+# Keep stable unique plugin identifiers as requested.
 juce_add_plugin(WavetableDualSynth
     COMPANY_NAME "Elephant Logic"
     BUNDLE_ID "com.elephantlogic.wavetabledualsynth"
@@ -54,8 +55,14 @@ target_sources(WavetableDualSynth PRIVATE
   dsp/ModMatrix.h
 )
 
-# Compile flags / defines
-target_compile_definitions(WavetableDualSynth PRIVATE JUCE_WEB_BROWSER=0)
+# Compile definitions for the plugin target: ensure VST3-only behaviour and disable unused JUCE features.
+# Marked PUBLIC so other consumers (e.g. tests or helper targets) inherit these stable build-time flags.
+target_compile_definitions(WavetableDualSynth
+    PUBLIC
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+)
 
 # Link to JUCE modules as needed
 target_link_libraries(WavetableDualSynth
