@@ -2,10 +2,28 @@
 #include "PluginEditor.h"
 #include "dsp/Voice.h" // use beef_core's voice
 
-// We keep implementation details private in the .cpp
+// Implementation details kept private in the .cpp
 struct BEEFAudioProcessor::Impl
 {
-    Impl() {}
+    juce::Synthesiser synth;
+    juce::dsp::ProcessorDuplicator<
+        juce::dsp::IIR::Filter<float>,
+        juce::dsp::IIR::Coefficients<float>
+    > filter;
+
+    juce::dsp::Reverb reverb;
+    juce::dsp::Gain<float> masterGain;
+
+    Impl()
+        : filter(
+            juce::dsp::IIR::Filter<float>(),
+            juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                44100.0,
+                15000.0f
+            )
+        )
+    {
+    }
 };
 
 BEEFAudioProcessor::BEEFAudioProcessor()
@@ -15,7 +33,8 @@ BEEFAudioProcessor::BEEFAudioProcessor()
           std::make_unique<juce::AudioParameterFloat>("masterGain", "Master Gain", juce::NormalisableRange<float>(-60.0f, 6.0f, 0.1f), -6.0f),
           std::make_unique<juce::AudioParameterFloat>("oscDetune", "Osc Detune (cents)", -1200.0f, 1200.0f, 0.0f),
           std::make_unique<juce::AudioParameterChoice>("waveform", "Waveform", juce::StringArray{"Sine","Saw","Square"}, 0)
-      })
+      }),
+      impl(std::make_unique<Impl>())
 {
 }
 
@@ -25,7 +44,18 @@ const juce::String BEEFAudioProcessor::getName() const { return "BEEF"; }
 
 void BEEFAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Prepare the synth (if present) or other processor resources
+    // Prepare synth voices and DSP if needed
+    // Ensure voices are prepared if synth populated elsewhere
+    for (int i = 0; i < impl->synth.getNumVoices(); ++i)
+    {
+        if (auto* v = dynamic_cast<BeefVoice*>(impl->synth.getVoice(i)))
+            v->prepareVoice(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+    }
+
+    // Prepare master gain and reverb if used
+    juce::dsp::ProcessSpec spec{ sampleRate, (juce::uint32)samplesPerBlock, (juce::uint32)getTotalNumOutputChannels() };
+    impl->masterGain.prepare(spec);
+    impl->reverb.prepare(spec);
 }
 
 void BEEFAudioProcessor::releaseResources() {}
@@ -52,8 +82,7 @@ void BEEFAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     float gainLinear = juce::Decibels::decibelsToGain(gainDb);
     buffer.applyGain(gainLinear);
 
-    // This minimal processor currently does not implement a full synth render here.
-    // The DSP classes are available through beef_core for tests and for a more complete synth implementation.
+    // Minimal synth processing could be added here using impl->synth if voices and sounds are setup.
 }
 
 bool BEEFAudioProcessor::hasEditor() const { return true; }

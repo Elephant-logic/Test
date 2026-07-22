@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <memory>
 
 class BEEFAudioProcessor  : public juce::AudioProcessor
 {
@@ -40,5 +41,8 @@ public:
 private:
     APVTS parameters;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BEEFAudioProcessor)
+    struct Impl;
+    std::unique_ptr<Impl> impl;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BEEFAudioProcessor)
 };
