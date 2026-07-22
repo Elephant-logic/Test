@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(WavetableDualSynth LANGUAGES C CXX)
+project(WavetableDualSynth VERSION 1.0.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(vst3sdk)
 
 # Add plugin target using JUCE CMake helper
 juce_add_plugin(WavetableDualSynth
+  VERSION 1.0.0
   PLUGIN_MANUFACTURER_CODE Wavt
   PLUGIN_CODE        WDS1
   FORMATS VST3
